@@ -1,0 +1,35 @@
+---
+- hosts: localhost
+  gather_facts: no
+  collections:
+    - community.kubernetes
+    - operator_sdk.util
+  tasks:
+    - import_role:
+        name: "postgresql"
+
+- hosts: db
+  gather_facts: no
+  connection: paramiko
+  tasks:
+    - meta: end_play
+      when: not running
+
+    - name: Wait postgresql vm(s) to be reachable over SSH
+      wait_for_connection:
+        delay: 1
+        timeout: 300
+
+- hosts: db
+  gather_facts: yes
+  connection: paramiko
+  collections:
+    - community.postgresql
+  tasks:
+    - meta: end_play
+      when: not running
+
+    - import_role:
+        name: geerlingguy.postgresql
+      become: yes
+

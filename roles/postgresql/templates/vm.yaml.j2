@@ -1,0 +1,70 @@
+apiVersion: kubevirt.io/v1alpha3
+kind: VirtualMachine
+metadata:
+  labels:
+    app: "{{ ansible_operator_meta.name }}-{{ name_suffix }}"
+    workload.template.kubevirt.io/server: "true"
+  name: "{{ ansible_operator_meta.name }}-{{ name_suffix }}"
+  namespace: "{{ ansible_operator_meta.namespace }}"
+spec:
+  running: {{ running }}
+  template:
+    metadata:
+      labels:
+        vm.kubevirt.io/name: "{{ ansible_operator_meta.name }}-{{ name_suffix }}"
+        workload.template.kubevirt.io/server: "true"
+    spec:
+      domain:
+        cpu:
+          cores: {{ cores|int }}
+          sockets: {{ sockets|int }}
+          threads: 1
+        devices:
+          disks:
+          - disk:
+              bus: virtio
+            name: cloudinitdisk
+          - bootOrder: 1
+            disk:
+              bus: virtio
+            name: rootdisk
+          interfaces:
+          - masquerade: {}
+            model: virtio
+            name: nic-0
+          networkInterfaceMultiqueue: true
+          rng: {}
+        machine:
+          type: pc-q35-rhel8.2.0
+        resources:
+          requests:
+            memory: {{ memory }}
+      #evictionStrategy: LiveMigrate
+      hostname: {{ ansible_operator_meta.name }}-{{ name_suffix }}
+      networks:
+      - name: nic-0
+        pod: {}
+      terminationGracePeriodSeconds: 180
+      volumes:
+      - cloudInitNoCloud:
+          userData: |
+            #cloud-config
+            user: {{ user }}
+{% if password is defined %}
+            password: {{ password }}
+            chpasswd:
+              expire: false
+{% endif %}
+{% set ssh_public_key_file = '/tmp/' ~ ansible_operator_meta.namespace ~ '_' ~ ansible_operator_meta.name ~ '_id_rsa.pub' %}
+            ssh_authorized_keys:
+              - {{lookup('file', ssh_public_key_file)}}
+{% if ssh_keys is defined %}
+{% for ssh_key in ssh_keys %}
+              - {{ssh_key}}
+{% endfor %}
+{% endif %}
+        name: cloudinitdisk
+      - containerDisk:
+          image: {{ image }}
+        name: rootdisk
+

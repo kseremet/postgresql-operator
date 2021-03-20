@@ -1,0 +1,116 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: postgresqls.db.koray.test
+spec:
+  group: db.koray.test
+  names:
+    kind: PostgreSQL
+    listKind: PostgreSQLList
+    plural: postgresqls
+    singular: postgresql
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: PostgreSQL is the Schema for the postgresqls API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: Spec defines the desired state of PostgreSQL
+            properties:
+              sshSecret:
+                description: Name of the kubernetes secret that contains ssh private and public key (id_rsa and id_rsa.pub) 
+                type: string
+              cores:
+                description: Cores specifies the number of cores the PostgreSQL VM will have
+                type: string
+                pattern: '^(1|2|4|8|16|24|32)$'
+              sockets:
+                description: Sockets specifies the number of sockets the PostgreSQL VM will have
+                type: string
+                default: '1'
+                pattern: '^(1|2|4)$'
+              memory:
+                description: Memory specifies the amount of memory the PostgreSQL VM will have
+                type: string
+              running:
+                description: Running specifies if the PostgreSQL VM will be powered on upon creation
+                default: true
+                type: boolean
+              image:
+                description: Image specifies container image pull spec of the PostgreSQL VM
+                type: string
+                default: quay.io/koray/centos-stream:8
+              user:
+                description: User specifies the default user that will be created by the cloud-init
+                type: string
+              password:
+                description: If a password is provided, it will be set as the password of the specified user
+                type: string
+              ports:
+                description: Ports specifies the target TCP ports of the PostgreSQL VM that will be used when defining a k8s service
+                type: array
+                items:
+                  type: integer
+                  format: int32
+                default:
+                - 22
+                - 5432
+              postgresqlUsers:
+                description: Database users specified here will be created on the database
+                type: array
+                items:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    password:
+                      type: string
+                    db:
+                      type: string
+              postgresqlDatabases:
+                description: Databases specified here will be created on the server
+                type: array
+                items:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    owner:
+                      type: string
+                    encoding:
+                      type: string
+                    lc_collate:
+                      type: string
+                    lc_ctype:
+                      type: string
+            required:
+            - cores
+            - memory
+            - sshSecret
+            - image
+            type: object
+            x-kubernetes-preserve-unknown-fields: true
+          status:
+            description: Status defines the observed state of PostgreSQL
+            type: object
+            x-kubernetes-preserve-unknown-fields: true
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}

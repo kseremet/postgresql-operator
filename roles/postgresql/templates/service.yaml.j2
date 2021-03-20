@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: "{{ ansible_operator_meta.name }}-{{ name_suffix }}"
+  namespace: "{{ ansible_operator_meta.namespace }}"
+spec:
+  ports:
+{% for port in ports %}
+  - port: {{ port }}
+    protocol: TCP
+    targetPort: {{ port }}
+    name: port-{{ port }}
+{% endfor %}
+  selector:
+    vm.kubevirt.io/name: "{{ ansible_operator_meta.name }}-{{ name_suffix }}"
+    workload.template.kubevirt.io/server: "true"
+  sessionAffinity: None
+  type: ClusterIP
+

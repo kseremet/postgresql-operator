@@ -1,0 +1,33 @@
+- name: Get the k8s secret that contains the ssh keys
+  community.kubernetes.k8s_info:
+    kind: Secret
+    namespace: "{{ ansible_operator_meta.namespace }}"
+    name: "{{ ssh_secret }}"
+  register: k8s_ssh_secret
+
+- name: Save SSH private and public keys to a temporary location
+  copy:
+    content: "{{ k8s_ssh_secret['resources'][0]['data'][item] | b64decode }}"
+    dest: "/tmp/{{ ansible_operator_meta.namespace }}_{{ ansible_operator_meta.name }}_{{ item }}"
+  with_items:
+  - id_rsa
+  - id_rsa.pub
+
+- name: Ensure PostgreSQL VM is created
+  community.kubernetes.k8s:
+    state: present
+    definition: "{{ lookup('template', 'vm.yaml.j2')|from_yaml }}"
+
+- name: Ensure a k8s service with ClusterIP exists to expose given ports
+  community.kubernetes.k8s:
+    state: present
+    definition: "{{ lookup('template', 'service.yaml.j2')|from_yaml }}"
+
+- name: Add VM into Ansible's run-time inventory
+  add_host:
+    hostname: "{{ ansible_operator_meta.name }}-master.{{ ansible_operator_meta.namespace }}"
+    groups:
+    - db
+    ansible_host: "{{ ansible_operator_meta.name }}-{{ name_suffix }}.{{ ansible_operator_meta.namespace }}"
+    ansible_user: "{{ user }}"
+    ansible_ssh_private_key_file: /tmp/{{ ansible_operator_meta.namespace }}_{{ ansible_operator_meta.name }}_id_rsa

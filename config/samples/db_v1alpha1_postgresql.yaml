@@ -1,0 +1,10 @@
+apiVersion: db.koray.test/v1alpha1
+kind: PostgreSQL
+metadata:
+  name: postgresql-sample
+spec:
+  cores: 1
+  memory: 512Mi
+  running: true
+  sshSecret: my-ssh-secret
+

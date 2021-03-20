@@ -1,0 +1,13 @@
+---
+# defaults file for PostgreSQL
+user: ansible
+image: quay.io/koray/centos-stream:8
+cores: 1
+sockets: 1
+memory: 1Gi
+running: true
+ports:
+ - 22
+ - 5432
+name_suffix: db
+
